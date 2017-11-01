@@ -913,14 +913,6 @@ $.extend($, {
     return localforage.getItem(key);
   },
   set: function set(key, value) {
-    if ($._regex[1].test(key)) {
-      var _key$split = key.split(":");
-
-      var _key$split2 = _slicedToArray(_key$split, 2);
-
-      key = _key$split2[0];
-      value = _key$split2[1];
-    }
     if (++counter > 100) {
       counter = 0;
       localStorage.setItem("ayy", String(Math.random().toString(32)).substr(2));
@@ -932,7 +924,7 @@ $.extend($, {
   },
 
   u: void 0,
-  _regex: [/^\/posts\/\d+$/,, /* 0 *//\d+:\w+\.(?:mp4|bmp|jpg|jpeg|gif|webm|png|zip)/i] /* 1 */
+  _regex: [/^\/posts\/\d+$/] /* 0 */
 });
 
 /**
@@ -1293,6 +1285,12 @@ DataBase = {
       }, _callee5, _this5);
     }))();
   },
+  _pullBatch: function _pullBatch(text) {
+    var setterFn = function setterFn(post) {
+      return $.set.apply($, _toConsumableArray(post.split(":")));
+    };
+    return text.trim().split("\n").map(setterFn);
+  },
   pullBatch: function pullBatch() {
     var _this6 = this;
 
@@ -1326,7 +1324,7 @@ DataBase = {
               }
 
               DataBase.notDone = false;
-              return _context6.abrupt("break", 22);
+              return _context6.abrupt("break", 23);
 
             case 10:
               if (!networkError) {
@@ -1339,55 +1337,56 @@ DataBase = {
             case 12:
               $.safe($.propSet, DataBase.displayProgress, "data", batchNumber);
               _context6.t0 = Promise;
-              _context6.next = 16;
+              _context6.t1 = DataBase;
+              _context6.next = 17;
               return request.text();
 
-            case 16:
-              _context6.t1 = $.set;
-              _context6.t2 = _context6.sent.trim().split("\n").reverse().map(_context6.t1);
-              _context6.next = 20;
-              return _context6.t0.all.call(_context6.t0, _context6.t2);
+            case 17:
+              _context6.t2 = _context6.sent;
+              _context6.t3 = _context6.t1._pullBatch.call(_context6.t1, _context6.t2);
+              _context6.next = 21;
+              return _context6.t0.all.call(_context6.t0, _context6.t3);
 
-            case 20:
-              _context6.next = 22;
+            case 21:
+              _context6.next = 23;
               return $.set("db_version", batchNumber);
 
-            case 22:
-              _context6.next = 27;
+            case 23:
+              _context6.next = 28;
               break;
 
-            case 24:
-              _context6.prev = 24;
-              _context6.t3 = _context6["catch"](0);
+            case 25:
+              _context6.prev = 25;
+              _context6.t4 = _context6["catch"](0);
 
               DataBase.notDone = null;
 
-            case 27:
-              _context6.prev = 27;
-              _context6.t4 = DataBase.notDone;
-              _context6.next = _context6.t4 === true ? 31 : _context6.t4 === false ? 33 : _context6.t4 === null ? 35 : 36;
+            case 28:
+              _context6.prev = 28;
+              _context6.t5 = DataBase.notDone;
+              _context6.next = _context6.t5 === true ? 32 : _context6.t5 === false ? 34 : _context6.t5 === null ? 36 : 37;
               break;
 
-            case 31:
+            case 32:
               ++DataBase.batchNumber;
-              return _context6.abrupt("break", 36);
+              return _context6.abrupt("break", 37);
 
-            case 33:
-              _context6.next = 35;
+            case 34:
+              _context6.next = 36;
               return $.set("timestamp", Date.now());
 
-            case 35:
+            case 36:
               DataBase.cleanUp();
 
-            case 36:
-              return _context6.finish(27);
-
             case 37:
+              return _context6.finish(28);
+
+            case 38:
             case "end":
               return _context6.stop();
           }
         }
-      }, _callee6, _this6, [[0, 24, 27, 37]]);
+      }, _callee6, _this6, [[0, 25, 28, 38]]);
     }))();
   },
   update: function update() {

@@ -1,3 +1,10 @@
+# /!\ Warning /!\
+This repository here is currently looking for someone kind enough to donate
+a gold or higher priviliged account API key to extract data for this userscript.
+You may contact me using the email skype1234@waifu.club for further details.  
+Without the right API key the batches currently in the repo will stay as they
+are now, without being updated.
+
 # Decensooru
 Addon userscript for [Better Better Booru][1] to decensor Danbooru.  
 You have to install [BBB v8.0][1] or newer. After installing that version make
