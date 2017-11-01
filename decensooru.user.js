@@ -143,9 +143,6 @@ $.extend($, {
     return localforage.getItem(key);
   },
   set(key, value) {
-    if ($._regex[1].test(key)) {
-      [key, value] = key.split(":");
-    }
     if (++counter > 100) {
       counter = 0;
       localStorage.setItem("ayy", String(Math.random().toString(32)).substr(2));
@@ -156,7 +153,7 @@ $.extend($, {
     parent[prop] = value;
   },
   u: void 0,
-  _regex: [/^\/posts\/\d+$/, /* 0 */, /\d+:\w+\.(?:mp4|bmp|jpg|jpeg|gif|webm|png|zip)/i]/* 1 */
+  _regex: [/^\/posts\/\d+$/]/* 0 */
 });
 
 /**
@@ -352,6 +349,10 @@ DataBase = {
     localStorage.setItem("ayy", "done");
     w.close();
   },
+  _pullBatch(text) {
+    const setterFn = post => $.set(...post.split(":"));
+    return text.trim().split("\n").map(setterFn);
+  },
   async pullBatch() {
     try {
       fetcher: {
@@ -373,9 +374,7 @@ DataBase = {
           throw new Error("Network error");
         }
         $.safe($.propSet, DataBase.displayProgress, "data", batchNumber);
-        await Promise.all(
-          (await request.text()).trim().split("\n").reverse().map($.set)
-        );
+        await Promise.all(DataBase._pullBatch(await request.text()));
         await $.set("db_version", batchNumber);
       }
     }
