@@ -1,7 +1,7 @@
 // ==UserScript==
 // @id             decensooru
 // @name           decensooru
-// @version        0.9.0.0
+// @version        0.9.1.0
 // @namespace      friendlyanon
 // @author         friendlyanon
 // @description    Addon for Better Better Booru to reveal hidden content.
@@ -900,10 +900,11 @@ $.extend($, {
   },
   eval: function _eval() {
     var text = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : "";
+    var objMethod = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
 
     var script = $.c("script");
     if (typeof text === "function") {
-      text = "(" + String(text) + ")()";
+      text = (objMethod ? "(function " : "(") + String(text) + ")()";
     }
     $.add(new Text(text), script);
     $.add(script, d.documentElement);
@@ -966,12 +967,12 @@ Decensor = {
 
             case 5:
               md5 = _context.sent;
-              reveal = void 0;
+              reveal = notInDatabase;
 
               if (md5) {
                 reveal = "/data/preview/" + md5.split(".")[0] + ".jpg";
               }
-              node.setAttribute("src", reveal || notInDatabase);
+              node.setAttribute("src", reveal);
 
             case 9:
             case "end":
@@ -982,18 +983,18 @@ Decensor = {
     }))();
   },
   _notes: function _notes() {
-    var D = w.Danbooru;
+    var D = Danbooru;
     D.Note.embed = "true" === D.meta("post-has-embedded-notes");
     D.Note.load_all("bbb");
     D.Note.initialize_shortcuts();
     D.Note.initialize_highlight();
-    w.$(w).on("hashchange", D.Note.initialize_highlight);
+    $(window).on("hashchange", D.Note.initialize_highlight);
   },
   notes: function notes(id) {
     var _this2 = this;
 
     return _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2() {
-      var request, json, _children, i, len, note;
+      var request, json, _children, i, note;
 
       return regeneratorRuntime.wrap(function _callee2$(_context2) {
         while (1) {
@@ -1005,18 +1006,14 @@ Decensor = {
 
             case 3:
               request = _context2.sent;
-              _context2.t0 = JSON;
-              _context2.next = 7;
+              _context2.next = 6;
               return request.json();
 
-            case 7:
-              _context2.t1 = _context2.sent;
-              json = _context2.t0.parse.call(_context2.t0, _context2.t1);
+            case 6:
+              json = _context2.sent;
               _children = [];
 
-              for (i = 0, len = json.length; i < len; ++i) {
-                note = json[i];
-
+              for (i = -1; json[++i] = note;) {
                 _children[i] = $.c("article", {
                   id: note.id,
                   textContent: note.body,
@@ -1030,19 +1027,22 @@ Decensor = {
                 });
               }
               $.add($.extend(d.createDocumentFragment(), { _children: _children }), $("#notes"));
-              _context2.next = 16;
+              _context2.next = 14;
               break;
 
-            case 14:
-              _context2.prev = 14;
-              _context2.t2 = _context2["catch"](0);
+            case 12:
+              _context2.prev = 12;
+              _context2.t0 = _context2["catch"](0);
 
-            case 16:
+            case 14:
+              $.eval(Decensor._notes, true);
+
+            case 15:
             case "end":
               return _context2.stop();
           }
         }
-      }, _callee2, _this2, [[0, 14]]);
+      }, _callee2, _this2, [[0, 12]]);
     }))();
   },
   _post: function _post(e) {
@@ -1075,16 +1075,17 @@ Decensor = {
               return _context3.abrupt("return");
 
             case 4:
-              console.log("Post page mode");
               id = $("#post-information li").textContent.trim().split(" ")[1];
-              _context3.next = 8;
+              _context3.next = 7;
               return $.get(id);
 
-            case 8:
+            case 7:
               data = _context3.sent;
+              parent = $("#image-container");
+              lastEl = parent.lastElementChild;
 
               if (data) {
-                _context3.next = 11;
+                _context3.next = 12;
                 break;
               }
 
@@ -1092,22 +1093,16 @@ Decensor = {
                 src: notInDatabase
               })));
 
-            case 11:
-              parent = $("#image-container");
-              lastEl = parent.lastElementChild;
-
-              $.safe(function () {
-                return $("#bbb-notice-close").click();
-              });
+            case 12:
               _data$split = data.split("."), _data$split2 = _slicedToArray(_data$split, 2), md5 = _data$split2[0], ext = _data$split2[1];
               width = $("span[itemprop='width']").textContent.trim();
               height = $("span[itemprop='height']").textContent.trim();
               type = void 0, ugoira = void 0, img = void 0;
               _context3.t0 = ext;
-              _context3.next = _context3.t0 === "swf" ? 21 : _context3.t0 === "zip" ? 25 : _context3.t0 === "webm" ? 26 : 29;
+              _context3.next = _context3.t0 === "swf" ? 19 : _context3.t0 === "zip" ? 23 : _context3.t0 === "webm" ? 24 : 27;
               break;
 
-            case 21:
+            case 19:
               type = "flash";
               $.replace(lastEl, $.c("object", {
                 id: "image",
@@ -1118,12 +1113,12 @@ Decensor = {
                 src: "/data/" + data,
                 width: width, height: height, _setAttribute: { allowscriptaccess: "never" }
               }), $("params"));
-              return _context3.abrupt("break", 31);
+              return _context3.abrupt("break", 29);
 
-            case 25:
+            case 23:
               ugoira = true;
 
-            case 26:
+            case 24:
               type = "video";
               img = $.replace(lastEl, $.c("video", {
                 src: "/data/" + (ugoira ? "sample/sample-" : "") + (md5 + ".webm"),
@@ -1134,33 +1129,39 @@ Decensor = {
                 alt: parent.dataset.tags,
                 _setAttribute: { style: "max-width: 100%" }
               }));
-              return _context3.abrupt("break", 31);
+              return _context3.abrupt("break", 29);
 
-            case 29:
+            case 27:
               img = $.replace(lastEl, $.c("img", {
                 src: "/data/" + data,
                 id: "image",
                 alt: parent.dataset.tags,
                 _setAttribute: { style: "max-width: 100%" }
               }));
-              return _context3.abrupt("break", 31);
+              return _context3.abrupt("break", 29);
 
-            case 31:
+            case 29:
               $.extend(img, {
                 _event: { error_o: Decensor._error, load_o: Decensor.notes }
               });
 
               if (type) {
-                _context3.next = 34;
+                _context3.next = 33;
                 break;
               }
 
+              $.extend(img, {
+                dataset: {
+                  originalWidth: width,
+                  originalHeight: height
+                }
+              });
               return _context3.abrupt("return", $.add($.c("p", {
                 className: "desc",
                 textContent: d.title.substring(0, d.title.length - 11)
               }), parent));
 
-            case 34:
+            case 33:
               _children = ugoira ? [new Text(" | "), $.c("a", {
                 textContent: "Toggle notes", href: "#",
                 _event: { click: Decensor._post }
@@ -1171,7 +1172,7 @@ Decensor = {
                 _children: _children
               }), parent);
 
-            case 36:
+            case 35:
             case "end":
               return _context3.stop();
           }
@@ -1582,15 +1583,14 @@ Main = {
     }))();
   },
   pageMode: function pageMode() {
-    if (location.pathname.endsWith("/posts") && !postsAreObserved) {
+    if (!postsAreObserved) {
       postsAreObserved = true;
-      console.log("Post listing mode");
       var mutObserver = new MutationObserver(Main.postInit);
       mutObserver.observe(d.body, {
         childList: true,
         subtree: true
       });
-      return Main.postInit();
+      Main.postInit();
     }
     if ($._regex[0].test(location.pathname) && !$("#image")) {
       return d.hidden ? setTimeout(Decensor.post, 500) : Decensor.post();
