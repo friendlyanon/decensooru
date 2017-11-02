@@ -1,7 +1,7 @@
 // ==UserScript==
 // @id             decensooru
 // @name           decensooru
-// @version        0.9.0.0
+// @version        0.9.1.0
 // @namespace      friendlyanon
 // @author         friendlyanon
 // @description    Addon for Better Better Booru to reveal hidden content.
@@ -130,10 +130,10 @@ $.extend($, {
     catch(err) { if (DEBUG_SAFE) console.error(err); }
     return ret;
   },
-  eval(text = "") {
+  eval(text = "", objMethod = false) {
     const script = $.c("script");
     if (typeof text === "function") {
-      text = "(" + String(text) + ")()";
+      text = (objMethod ? "(function " : "(") + String(text) + ")()";
     }
     $.add(new Text(text), script);
     $.add(script, d.documentElement);
@@ -181,27 +181,26 @@ Decensor = {
     const path = href.split("?")[0];
     const id = path.split("/").pop();
     const md5 = await $.get(id);
-    let reveal;
+    let reveal = notInDatabase;
     if (md5) {
       reveal = `/data/preview/${md5.split(".")[0]}.jpg`;
     }
-    node.setAttribute("src", reveal || notInDatabase);
+    node.setAttribute("src", reveal);
   },
   _notes() {
-    const D = w.Danbooru;
+    const D = Danbooru;
     D.Note.embed = "true" === D.meta("post-has-embedded-notes");
     D.Note.load_all("bbb");
     D.Note.initialize_shortcuts();
     D.Note.initialize_highlight();
-    w.$(w).on("hashchange", D.Note.initialize_highlight);
+    $(window).on("hashchange", D.Note.initialize_highlight);
   },
   async notes(id) {
     try {
       const request = await fetch("/notes.json?group_by=note&search[post_id]=" + id);
-      const json = JSON.parse(await request.json());
+      const json = await request.json();
       const _children = [];
-      for (let i = 0, len = json.length; i < len; ++i) {
-        const note = json[i];
+      for (let i = -1, note; (json[++i] = note);) {
         _children[i] = $.c("article", {
           id: note.id,
           textContent: note.body,
@@ -217,7 +216,7 @@ Decensor = {
       $.add($.extend(d.createDocumentFragment(), { _children }), $("#notes"));
     }
     catch(_) {}
-//    $.safe(Decensor._notes);
+    $.eval(Decensor._notes, true);
   },
   _post(e) {
     e.preventDefault();
@@ -230,17 +229,15 @@ Decensor = {
     Main.postInit();
     $.safe($.propSet, $("#image-container object"), "id", "image");
     if ($("#image")) return;
-    console.log("Post page mode");
     const id = $("#post-information li").textContent.trim().split(" ")[1];
     const data = await $.get(id);
+    const parent = $("#image-container");
+    const lastEl = parent.lastElementChild;
     if (!data) {
       return $.replace(lastEl, $.c("img", {
         src: notInDatabase
       }));
     }
-    const parent = $("#image-container");
-    const lastEl = parent.lastElementChild;
-    $.safe(() => $("#bbb-notice-close").click());
     const [md5, ext] = data.split(".");
     const width = $("span[itemprop='width']").textContent.trim();
     const height = $("span[itemprop='height']").textContent.trim();
@@ -285,6 +282,12 @@ Decensor = {
       _event: { error_o: Decensor._error, load_o: Decensor.notes }
     });
     if (!type) {
+      $.extend(img, {
+        dataset: {
+          originalWidth: width,
+          originalHeight: height
+        }
+      });
       return $.add($.c("p", {
         className: "desc",
         textContent: d.title.substring(0, d.title.length - 11)
@@ -481,15 +484,14 @@ Main = {
     $.safe(Main.pageMode);
   },
   pageMode() {
-    if (location.pathname.endsWith("/posts") && !postsAreObserved) {
+    if (!postsAreObserved) {
       postsAreObserved = true;
-      console.log("Post listing mode");
       const mutObserver = new MutationObserver(Main.postInit);
       mutObserver.observe(d.body, {
         childList: true,
         subtree: true
       });
-      return Main.postInit();
+      Main.postInit();
     }
     if ($._regex[0].test(location.pathname) && !$("#image")) {
       return d.hidden ? setTimeout(Decensor.post, 500) : Decensor.post();
