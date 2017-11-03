@@ -28,8 +28,10 @@ unresponsive. There is nothing I can do about this, so I just ask you to not
 panic.
 * One of the consquence of the above mentioned is that those kinds of storage
 **do not work cross protocol!** That means that storage between `http` and
-`https` cannot be used, they both have their own storages. I recommend that you
-stick to using the `https` version of Danbooru exclusively.
+`https` cannot be shared, they both have their own storages. This userscript
+will make sure that you are automatically redirected to the `https` version of
+Danbooru, so I recommend that you import your BBB settings to the `https`
+version before installing this addon.
 * The popup is opened via `window.open()` which might issue a popup warning if
 you have it enabled. You might have to disable the popup blocker and instead I
 recommend a mature blocking solution for malicious content on the web, such as:
@@ -84,8 +86,8 @@ You will require node and npm to be installed for the building process.
 ```
 git clone https://github.com/friendlyanon/decensooru.git
 cd decensooru
-npm install --save-dev babel-cli babel-preset-es2015 babel-plugin-transform-async-to-generator babel-plugin-transform-regenerator
-node build_es6.js
+npm install --save-dev babel-cli babel-plugin-transform-async-to-generator
+babel --plugins transform-async-to-generator decensooru.user.js -o decensooru_es6.user.js
 ```
 
 License
