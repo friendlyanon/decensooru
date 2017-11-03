@@ -40,6 +40,12 @@ Y0aVUqIHvq0wLHOSOWZqEW+/qvdnWjk4ef4/g5TJ2gRwv9kwieTeskplVZVmpx1pFVfJG9OAVMHhRnq\
 Tg9JNQltlVfbFzcMfF8nJjxWh6qcHqPyKQl1SRW/J2Mq+pWxe85DdSJ342V2u3sMeSPk9aUMam0Vr15\
 v9fohDlUicqlJa+RSJdKq32Gf8lT25lfHm0fWg/GqOGPSj+OPZjnXt40331osQAHjXbPv09t/d5Ipou\
 lJZKX4NpSWSpLZakslaWyVJbKUln/nax/AgwAE+Yw8Q3qDzQAAAAASUVORK5CYII=";
+const strings = [
+  "https://cdn.rawgit.com/github/fetch/master/fetch.js",
+  "https://cdn.rawgit.com/mozilla/localForage/master/dist/localforage.js",
+  "width=600,height=300,toolbar=0,menubar=0,location=0,status=0,scrollbars=0,re\
+sizable=0"
+];
 let postsAreObserved;
 
 /**
@@ -161,7 +167,7 @@ $.extend($, {
   set(key, value) {
     if (++counter > 100) {
       counter = 0;
-      localStorage.setItem("ayy", String(Math.random().toString(32)).substr(2));
+      localStorage.setItem("ayy", key);
     }
     return localforage.setItem(key, value);
   },
@@ -169,7 +175,7 @@ $.extend($, {
     parent[prop] = value;
   },
   u: void 0,
-  _regex: [/^\/posts\/\d+$/]/* 0 */
+  _regex: [/^\/posts\/(\d+)$/]/* 0 */
 });
 
 /**
@@ -246,13 +252,20 @@ Decensor = {
   },
   async post() {
     Main.postInit();
+    if (Decensor.postWorking) return;
+    else {
+      Decensor.postWorking = true;
+    }
     $.safe($.propSet, $("#image-container object"), "id", "image");
-    if ($("#image")) return;
+    if ($("#image")) {
+      return (Decensor.postWorking = false);
+    }
     const id = $("#post-information li").textContent.trim().split(" ")[1];
     const data = await $.get(id);
     const parent = $("#image-container");
     const lastEl = parent.lastElementChild;
     if (!data) {
+      Decensor.postWorking = false;
       return $.replace(lastEl, $.c("img", {
         src: notInDatabase
       }));
@@ -307,6 +320,7 @@ Decensor = {
           originalHeight: height
         }
       });
+      Decensor.postWorking = false;
       return $.add($.c("p", {
         className: "desc",
         textContent: d.title.substring(0, d.title.length - 11)
@@ -326,6 +340,7 @@ Decensor = {
         `<a href="/data/${data}">Save this ${type} (right click and save)</a>`,
       _children
     }), parent);
+    Decensor.postWorking = false;
   }
 };
 
@@ -336,27 +351,24 @@ DataBase = {
   notDone: true,
   batches: "https://cdn.rawgit.com/friendlyanon/decensooru/master/batches/",
   async _initDB({key, newValue}) {
-    if (key === "ayy") {
-      if (newValue === "done") {
-        w.removeEventListener("storage", DataBase._initDB);
-        DataBase.batchNumber = await $.get("db_version");
-        localStorage.removeItem("ayy");
-        Main.init();
-      }
-      else if (newValue === "startInit") {
-        DataBase.cleanUp();
-      }
-      else {
-        const el = $(".decensooru");
-        if (el) {
-          const svg = $("svg", el);
-          if (!svg) {
-            $.rm(el);
-          }
-        }
-        Main.postInit();
+    if (key !== "ayy") return;
+    switch(newValue) {
+     case "done":
+      w.removeEventListener("storage", DataBase._initDB);
+      DataBase.batchNumber = await $.get("db_version");
+      localStorage.removeItem("ayy");
+      return Main.init();
+     case "startInit":
+      return DataBase.cleanUp();
+    }
+    const el = $(".decensooru");
+    if (el) {
+      const svg = $("svg", el);
+      if (!svg) {
+        $.rm(el);
       }
     }
+    Decensor.post();
   },
   async initDB() {
     $("body").classList.add("decensooru");
@@ -377,9 +389,11 @@ DataBase = {
     localStorage.setItem("ayy", "done");
     w.close();
   },
-  _pullBatch(text) {
-    const setterFn = post => $.set(...post.split(":"));
-    return text.trim().split("\n").map(setterFn);
+  _all(post) {
+    return $.set(...post.split(":"));
+  },
+  all(text) {
+    return text.trim().split("\n").map(DataBase._all);
   },
   async pullBatch() {
     try {
@@ -402,7 +416,7 @@ DataBase = {
           throw new Error("Network error");
         }
         $.safe($.propSet, DataBase.displayProgress, "data", batchNumber);
-        await Promise.all(DataBase._pullBatch(await request.text()));
+        await Promise.all(DataBase.all(await request.text()));
         await $.set("db_version", batchNumber);
       }
     }
@@ -432,7 +446,7 @@ DataBase = {
     while(DataBase.notDone) {
       await DataBase.pullBatch();
     }
-    Main.pageMode();
+    Decensor.post();
   },
   async cleanUp() {
     for (let i = 0, arr = $$(".decensooru"), len = arr.length; i < len; ++i) {
@@ -465,7 +479,7 @@ Main = {
       console.log("Polyfilling `fetch`");
       $.add($.c("script", {
         type: "text/javascript",
-        src: "https://cdn.rawgit.com/github/fetch/master/fetch.js",
+        src: strings[0],
         _event: { load_o: Main.localForage }
       }), d.head);
     }
@@ -476,8 +490,7 @@ Main = {
   localForage() {
     $.add($.c("script", {
       type: "text/javascript",
-      src:
-        "https://cdn.rawgit.com/mozilla/localForage/master/dist/localforage.js",
+      src: strings[1],
       _event: { load_o: Main._setup }
     }), d.head);
   },
@@ -493,14 +506,9 @@ Main = {
         innerHTML: `Click here to begin initial Decensooru setup`,
         _setAttribute: { style: "padding: 5px" },
         _event: {
-          click: () => {
+          click_o: () => {
             localStorage.setItem("ayy", "startInit");
-            return w.open(
-              location.origin + "/?initDB",
-              "initDB",
-              "width=600,height=300,toolbar=0,menubar=0,location=0,status=0,scr\
-ollbars=0,resizable=0"
-            );
+            return w.open(location.origin + "/?initDB", "initDB", strings[2]);
           }
         }
       }));
