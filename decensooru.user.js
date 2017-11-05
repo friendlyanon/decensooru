@@ -218,7 +218,7 @@ Decensor = {
     node.setAttribute("src", reveal);
   },
   _notes() {
-    const D = Danbooru;
+    var D = Danbooru;
     D.Note.embed = "true" === D.meta("post-has-embedded-notes");
     D.Note.load_all("bbb");
     D.Note.initialize_shortcuts();

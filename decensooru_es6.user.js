@@ -1,7 +1,7 @@
 // ==UserScript==
 // @id             decensooru
 // @name           decensooru
-// @version        0.9.1.0
+// @version        0.9.1.1
 // @namespace      friendlyanon
 // @author         friendlyanon
 // @description    Addon for Better Better Booru to reveal hidden content.
@@ -225,7 +225,7 @@ Decensor = {
     })();
   },
   _notes() {
-    const D = Danbooru;
+    var D = Danbooru;
     D.Note.embed = "true" === D.meta("post-has-embedded-notes");
     D.Note.load_all("bbb");
     D.Note.initialize_shortcuts();
