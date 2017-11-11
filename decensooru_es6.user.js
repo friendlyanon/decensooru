@@ -1,7 +1,7 @@
 // ==UserScript==
 // @id             decensooru
 // @name           decensooru
-// @version        0.9.1.1
+// @version        0.9.1.0
 // @namespace      friendlyanon
 // @author         friendlyanon
 // @description    Addon for Better Better Booru to reveal hidden content.
@@ -234,8 +234,9 @@ Decensor = {
   },
   notes(id) {
     return _asyncToGenerator(function* () {
+      const notesUrl = "/notes.json?group_by=note&search[post_id]=" + id;
       try {
-        const request = yield fetch("/notes.json?group_by=note&search[post_id]=" + id);
+        const request = yield fetch(notesUrl);
         const json = yield request.json();
         const _children = [];
         for (let i = -1, note; json[++i] = note;) {
