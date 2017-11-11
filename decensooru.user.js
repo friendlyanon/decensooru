@@ -226,9 +226,9 @@ Decensor = {
     $(window).on("hashchange", D.Note.initialize_highlight);
   },
   async notes(id) {
+    const notesUrl = "/notes.json?group_by=note&search[post_id]=" + id;
     try {
-      const request =
-        await fetch("/notes.json?group_by=note&search[post_id]=" + id);
+      const request = await fetch(notesUrl);
       const json = await request.json();
       const _children = [];
       for (let i = -1, note; (json[++i] = note);) {
