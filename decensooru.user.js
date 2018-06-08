@@ -17,6 +17,9 @@
 
 "use strict";
 
+/* eslint-disable no-cond-assign, no-empty, no-fallthrough */
+/* globals localforage, Danbooru */
+
 /**
  * BASIC CONSTANTS
  */
@@ -86,7 +89,7 @@ $.extend = function(obj, props) {
     if (_setAttribute) {
       const _props = _setAttribute, arr = $.keys(_props);
       for (let i = 0, len = arr.length, key; i < len; ++i) {
-        obj.setAttribute((key = arr[i]), _props[key]);
+        obj.setAttribute(key = arr[i], _props[key]);
       }
     }
     if (_children) {
@@ -127,14 +130,14 @@ $.extend($, {
       queue = $.u;
     }, { once: true });
     return (fn, ...args) => queue
-    ? (queue[queue.length] = {fn, args})
+    ? queue[queue.length] = { fn, args }
     : $.safe(fn, ...args);
   }()),
-  _rm(el) { el.parentNode.removeChild(el) },
+  _rm(el) { el.parentNode.removeChild(el); },
   rm(el) {
     $.safe($._rm, el);
   },
-  _add(el, to) { to.appendChild(el) },
+  _add(el, to) { to.appendChild(el); },
   add(el, to = d.body) {
     $.safe($._add, el, to);
     return el;
@@ -218,7 +221,7 @@ Decensor = {
     node.setAttribute("src", reveal);
   },
   _notes() {
-    var D = Danbooru;
+    let D = Danbooru;
     D.Note.embed = "true" === D.meta("post-has-embedded-notes");
     D.Note.load_all("bbb");
     D.Note.initialize_shortcuts();
@@ -231,7 +234,7 @@ Decensor = {
       const request = await fetch(notesUrl);
       const json = await request.json();
       const _children = [];
-      for (let i = -1, note; (json[++i] = note);) {
+      for (let i = -1, note; json[++i] = note; ) {
         const { id, x, y, width, height, body } = note;
         _children[i] = $.c("article", {
           id, textContent: body,
@@ -258,7 +261,7 @@ Decensor = {
     }
     $.safe($.propSet, $("#image-container object"), "id", "image");
     if ($("#image")) {
-      return (Decensor.postWorking = false);
+      return Decensor.postWorking = false;
     }
     const id = $("#post-information li").textContent.trim().split(" ")[1];
     const data = await $.get(id);
@@ -513,7 +516,7 @@ Main = {
         }
       }));
     }
-    if (Date.now() - 288e5 /* 8 HOURS */ > (await $.get("timestamp"))) {
+    if (Date.now() - 288e5 /* 8 HOURS */ > await $.get("timestamp")) {
       ++DataBase.batchNumber;
       DataBase.update();
     }
