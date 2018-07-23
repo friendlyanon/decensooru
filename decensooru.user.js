@@ -1,7 +1,7 @@
 // ==UserScript==
 // @id             decensooru
 // @name           decensooru
-// @version        0.9.1.0
+// @version        0.9.2.0
 // @namespace      friendlyanon
 // @author         friendlyanon
 // @description    Addon for Better Better Booru to reveal hidden content.
@@ -23,7 +23,7 @@
 /**
  * BASIC CONSTANTS
  */
-const DEBUG_SAFE = false;
+const DEBUG = false;
 const d = document;
 const w = window;
 const notInDatabase = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJYAAACWCA\
@@ -43,70 +43,46 @@ Y0aVUqIHvq0wLHOSOWZqEW+/qvdnWjk4ef4/g5TJ2gRwv9kwieTeskplVZVmpx1pFVfJG9OAVMHhRnq\
 Tg9JNQltlVfbFzcMfF8nJjxWh6qcHqPyKQl1SRW/J2Mq+pWxe85DdSJ342V2u3sMeSPk9aUMam0Vr15\
 v9fohDlUicqlJa+RSJdKq32Gf8lT25lfHm0fWg/GqOGPSj+OPZjnXt40331osQAHjXbPv09t/d5Ipou\
 lJZKX4NpSWSpLZakslaWyVJbKUln/nax/AgwAE+Yw8Q3qDzQAAAAASUVORK5CYII=";
-const strings = [
-  "https://cdn.rawgit.com/github/fetch/master/fetch.js",
-  "https://cdn.rawgit.com/mozilla/localForage/master/dist/localforage.js",
-  "width=600,height=300,toolbar=0,menubar=0,location=0,status=0,scrollbars=0,re\
-sizable=0"
-];
+const isImagePage = /^\/posts\/(\d+)$/.test(location.pathname);
 let postsAreObserved;
-
-/**
- * VARIABLE TO HELP WITH STAGGERING REFRESHES IN `DataBase.pullBatch`
- */
-let counter = 0;
 
 /**
  * UTILITIES
  */
-const $$ = (a, b = d) => b.querySelectorAll(a);
-const $ = (a, b) => $$(a, b)[0] || null;
-
-$.keys = Object.keys;
+function $$(a, b = d.body) { return b.querySelectorAll(a); }
+function $(a, b = d) { return b.querySelector(a); }
 
 $.extend = function(obj, props) {
   let _setAttribute, _event, _children, _dataset;
-  if (props.hasOwnProperty("_setAttribute")) {
-    _setAttribute = props._setAttribute;
-    delete props._setAttribute;
-  }
-  if (props.hasOwnProperty("_children")) {
-    _children = props._children;
-    delete props._children;
-  }
-  if (props.hasOwnProperty("_event")) {
-    _event = props._event;
-    delete props._event;
-  }
-  if (props.hasOwnProperty("dataset")) {
-    _dataset = props.dataset;
-    delete props.dataset;
-  }
-  for (let i = 0, arr = $.keys(props), len = arr.length, key; i < len; ++i) {
-    obj[key = arr[i]] = props[key];
+  for (const key in props) {
+    switch (key) {
+      case "_setAttribute": _setAttribute = props._setAttribute; continue;
+      case "_children": _children = props._children; continue;
+      case "_event": _event = props._event; continue;
+      case "dataset": _dataset = props.dataset; continue;
+      default: obj[key] = props[key]; continue;
+    }
   }
   if (obj instanceof Node) {
     if (_setAttribute) {
-      const _props = _setAttribute, arr = $.keys(_props);
-      for (let i = 0, len = arr.length, key; i < len; ++i) {
-        obj.setAttribute(key = arr[i], _props[key]);
+      for (const key in _setAttribute) {
+        obj.setAttribute(key, _setAttribute[key]);
       }
     }
     if (_children) {
-      const arr = _children;
-      for (let i = 0, len = arr.length; i < len; ++i) {
-        $.add(arr[i], obj);
+      for (let i = 0, len = _children.length; i < len; ++i) {
+        $.add(_children[i], obj);
       }
     }
     if (_event) {
-      const arr = $.keys(_event);
-      for (let i = 0, len = arr.length, key, evt; i < len; (evt = $.u) || ++i) {
-        const opts = [];
-        if ((key = arr[i]).endsWith("_o")) {
-          evt = key.substring(0, key.length - 2);
-          opts[0] = { once: true };
+      const on = obj.addEventListener;
+      for (const key in _event) {
+        const args = [key, _event[key]];
+        if (key.endsWith("_o")) {
+          args[0] = key.substring(0, key.length - 2);
+          args.push({ once: true });
         }
-        obj.addEventListener(evt || key, _event[key], ...opts);
+        on.apply(obj, args);
       }
     }
     if (_dataset) {
@@ -121,18 +97,6 @@ $.extend($, {
     const el = d.createElement(c);
     return o ? $.extend(el, o) : el;
   },
-  r: (function(){
-    let queue = [];
-    d.addEventListener("DOMContentLoaded", () => {
-      for (let i = 0, len = queue.length; i < len; ++i) {
-        $.safe(queue[i].fn, ...queue[i].args);
-      }
-      queue = $.u;
-    }, { once: true });
-    return (fn, ...args) => queue
-    ? queue[queue.length] = { fn, args }
-    : $.safe(fn, ...args);
-  }()),
   _rm(el) { el.parentNode.removeChild(el); },
   rm(el) {
     $.safe($._rm, el);
@@ -149,10 +113,12 @@ $.extend($, {
   replace(old, replacement) {
     return $.safe($._replace, old, replacement);
   },
-  safe(fn, ...args) {
+  safe() {
     let ret;
-    try { ret = fn(...args); }
-    catch(err) { if (DEBUG_SAFE) console.error(err); }
+    const args = [];
+    args.push.apply(args, arguments);
+    try { ret = args.shift().apply($.u, args); }
+    catch (err) { if (DEBUG) console.error(err); }
     return ret;
   },
   eval(text = "", objMethod = false) {
@@ -168,17 +134,12 @@ $.extend($, {
     return localforage.getItem(key);
   },
   set(key, value) {
-    if (++counter > 100) {
-      counter = 0;
-      localStorage.setItem("ayy", key);
-    }
     return localforage.setItem(key, value);
   },
   propSet(parent, prop, value) {
     parent[prop] = value;
   },
-  u: void 0,
-  _regex: [/^\/posts\/(\d+)$/]/* 0 */
+  u: void 0
 });
 
 /**
@@ -214,14 +175,20 @@ Decensor = {
     const path = href.split("?")[0];
     const id = path.split("/").pop();
     const md5 = await $.get(id);
-    let reveal = notInDatabase;
-    if (md5) {
-      reveal = `/data/preview/${md5.split(".")[0]}.jpg`;
-    }
+    const reveal = md5 ?
+      `/data/preview/${md5.split(".")[0]}.jpg` :
+      notInDatabase;
     node.setAttribute("src", reveal);
   },
+  noteNodeMapper(note) {
+    const { id, x, y, width, height, body } = note;
+    return $.c("article", {
+      id, textContent: body,
+      dataset: { x, y, width, height, body }
+    });
+  },
   _notes() {
-    let D = Danbooru;
+    const D = Danbooru;
     D.Note.embed = "true" === D.meta("post-has-embedded-notes");
     D.Note.load_all("bbb");
     D.Note.initialize_shortcuts();
@@ -231,16 +198,13 @@ Decensor = {
   async notes(id) {
     const notesUrl = "/notes.json?group_by=note&search[post_id]=" + id;
     try {
-      const request = await fetch(notesUrl);
-      const json = await request.json();
-      const _children = [];
-      for (let i = -1, note; json[++i] = note; ) {
-        const { id, x, y, width, height, body } = note;
-        _children[i] = $.c("article", {
-          id, textContent: body,
-          dataset: { x, y, width, height, body }
-        });
-      }
+      const x = new XMLHttpRequest;
+      const awaiter = { then(ok, err) { x.onload = ok; x.onerror = err; } };
+      x.open("GET", notesUrl);
+      x.responseType = "json";
+      x.send();
+      const json = (await awaiter).response;
+      const _children = json.map(Decensor.noteNodeMapper);
       $.add($.extend(d.createDocumentFragment(), { _children }), $("#notes"));
     }
     catch(_) {}
@@ -250,20 +214,23 @@ Decensor = {
     e.preventDefault();
     $.safe(w.Danbooru.Note.Box.toggle_all);
   },
-  _error({currentTarget: e}) {
+  _error({ currentTarget: e }) {
     e.src = "/cached" + e.getAttribute("src");
   },
   async post() {
+    if (!isImagePage) return;
     Main.postInit();
     if (Decensor.postWorking) return;
     else {
       Decensor.postWorking = true;
     }
-    $.safe($.propSet, $("#image-container object"), "id", "image");
     if ($("#image")) {
       return Decensor.postWorking = false;
     }
-    const id = $("#post-information li").textContent.trim().split(" ")[1];
+    $.safe($.propSet, $("#image-container object"), "id", "image");
+    const postInfo = $("#post-information li");
+    if (!postInfo) return Decensor.postWorking = false;
+    const id = postInfo.textContent.trim().split(" ")[1];
     const data = await $.get(id);
     const parent = $("#image-container");
     const lastEl = parent.lastElementChild;
@@ -277,7 +244,7 @@ Decensor = {
     const width = $("span[itemprop='width']").textContent.trim();
     const height = $("span[itemprop='height']").textContent.trim();
     let type, ugoira, img;
-    switch(ext) {
+    switch (ext) {
      case "swf":
       type = "flash";
       $.replace(lastEl, $.c("object", {
@@ -295,7 +262,7 @@ Decensor = {
      case "webm":
       type = "video";
       img = $.replace(lastEl, $.c("video", {
-        src: "/data/" + (ugoira ? "sample/sample-" : "") + `${md5}.webm`,
+        src: `/data/${ugoira ? "sample/sample-" : ""}${md5}.webm`,
         id: "image",
         autoplay: true,
         loop: true,
@@ -323,11 +290,11 @@ Decensor = {
           originalHeight: height
         }
       });
-      Decensor.postWorking = false;
-      return $.add($.c("p", {
+      $.add($.c("p", {
         className: "desc",
         textContent: d.title.substring(0, d.title.length - 11)
       }), parent);
+      return Decensor.postWorking = false;
     }
     const _children = ugoira
     ? [
@@ -339,8 +306,7 @@ Decensor = {
     ]
     : [];
     $.add($.c("p", {
-      innerHTML:
-        `<a href="/data/${data}">Save this ${type} (right click and save)</a>`,
+      innerHTML: `<a href="/data/${data}">Save this ${type} (right click and save)</a>`,
       _children
     }), parent);
     Decensor.postWorking = false;
@@ -353,9 +319,9 @@ Decensor = {
 DataBase = {
   notDone: true,
   batches: "https://cdn.rawgit.com/friendlyanon/decensooru/master/batches/",
-  async _initDB({key, newValue}) {
+  async _initDB({ key, newValue }) {
     if (key !== "ayy") return;
-    switch(newValue) {
+    switch (newValue) {
      case "done":
       w.removeEventListener("storage", DataBase._initDB);
       DataBase.batchNumber = await $.get("db_version");
@@ -378,35 +344,36 @@ DataBase = {
     $.add($.c("div", {
       id: "populating",
       innerHTML: `<div class="loadingSpinner"><div>${SVG.spinner100}</div></div>
-<div class="loadingText">Downloading batch #<span class="progress">0</span> . . 
-.<br /><br /><strong>Your browser might freeze for several minutes. Don't panic!
-</strong><br />This is the initial setup and will only occur this one time.
-<br />Future updates to the local database will happen in a non-intrusive way.
-<br />Happy Booru browsing!</div>`
+<div class="loadingText"><span></span><span></span> . . .<br /><br /><strong>
+Your browser might freeze for several minutes. Don't panic!</strong><br />This 
+is the initial setup and will only occur this one time.<br />Future updates to 
+the local database will happen in a non-intrusive way.<br />Happy Booru 
+browsing!</div>`
     }));
-    DataBase.displayProgress = $("#populating .progress").lastChild;
+    DataBase.displayProgress = $("#populating .loadingText").children;
     DataBase.batchNumber = 0;
-    while(DataBase.notDone) {
-      await DataBase.pullBatch();
-    }
+    while (DataBase.notDone) await DataBase.pullBatch();
     localStorage.setItem("ayy", "done");
     w.close();
   },
-  _all(post) {
-    return $.set(...post.split(":"));
-  },
-  all(text) {
-    return text.trim().split("\n").map(DataBase._all);
+  all(line) {
+    return $.set.apply($.u, line.trim().split(":"));
   },
   async pullBatch() {
     try {
       fetcher: {
-        const {batchNumber} = DataBase;
-        const request = await fetch(DataBase.batches + batchNumber);
+        const { batchNumber } = DataBase;
+        const x = new XMLHttpRequest;
+        const awaiter = { then(ok, err) { x.onload = ok; x.onerror = err; } };
+        x.open("GET", DataBase.batches + batchNumber);
+        x.send();
+        DataBase.displayProgress[0].textContent = "Downloading batch #";
+        DataBase.displayProgress[1].textContent = batchNumber;
+        await awaiter;
         let networkError = true, _404 = false;
-        switch(request.status) {
+        switch (x.status) {
          case 404:
-          _404 = true;
+          _404 = true; break;
          case 200:
          case 304:
           networkError = false;
@@ -418,8 +385,14 @@ DataBase = {
         if (networkError) {
           throw new Error("Network error");
         }
-        $.safe($.propSet, DataBase.displayProgress, "data", batchNumber);
-        await Promise.all(DataBase.all(await request.text()));
+        const pairs = x.responseText.trim().split("\n");
+        DataBase.displayProgress[0].textContent = "Processing batch: ";
+        for (let i = 0, len = Math.ceil(pairs.length / 500); i < len; ) {
+          const pairBatch = pairs.splice(0, 500).map(DataBase.all);
+          DataBase.displayProgress[1].textContent = `${++i} / ${len}`;
+          await Promise.all(pairBatch);
+          Main.postInit();
+        }
         await $.set("db_version", batchNumber);
       }
     }
@@ -427,7 +400,7 @@ DataBase = {
       DataBase.notDone = null;
     }
     finally {
-      switch(DataBase.notDone) {
+      switch (DataBase.notDone) {
        case true:
         ++DataBase.batchNumber;
         break;
@@ -442,19 +415,15 @@ DataBase = {
     $.add($.c("div", {
       id: "update",
       className: "decensooru",
-      innerHTML: `${SVG.spinner34}<br />Updating to 
-#<span class="progress">${DataBase.batchNumber}</span>`
+      innerHTML: `${SVG.spinner34}<br /><span class="progress"><span></span><span></span></span>`
     }));
-    DataBase.displayProgress = $("#update.decensooru .progress").lastChild;
-    while(DataBase.notDone) {
-      await DataBase.pullBatch();
-    }
-    Decensor.post();
+    DataBase.displayProgress = $("#update.decensooru .progress").children;
+    while (DataBase.notDone) await DataBase.pullBatch();
+    if (isImagePage) Decensor.post();
+    else Main.postInit();
   },
-  async cleanUp() {
-    for (let i = 0, arr = $$(".decensooru"), len = arr.length; i < len; ++i) {
-      $.rm(arr[i]);
-    }
+  cleanUp() {
+    Array.from($$(".decensooru"), $.rm);
   }
 };
 
@@ -462,40 +431,27 @@ DataBase = {
  * ENTRYPOINT
  */
 Main = {
-  async _setup() {
+  async setup() {
+    const awaiter = { then(_) { this._ = _; } };
+    console.log("Decensooru!");
+    $.add($.c("style", { textContent: Main.css }), d.head);
+    $.add($.c("script", {
+      type: "text/javascript",
+      src: "https://cdn.rawgit.com/mozilla/localForage/master/dist/localforage.js",
+      _event: { load_o: function() { awaiter._(); } }
+    }), d.head);
+    await awaiter;
     localforage.config({
       name: "hiddenContent"
     });
     await localforage.ready();
     DataBase.batchNumber = await $.get("db_version");
-    try {
-      await Main.init();
-    } catch(err) { console.error(err); }
+    await Main.init();
   },
-  setup() {
-    console.log("Decensooru!");
-    $.add($.c("style", { textContent: Main.css }), d.head);
-    Main.polyfill();
-  },
-  polyfill() {
-    if (!w.fetch) {
-      console.log("Polyfilling `fetch`");
-      $.add($.c("script", {
-        type: "text/javascript",
-        src: strings[0],
-        _event: { load_o: Main.localForage }
-      }), d.head);
-    }
-    else {
-      Main.localForage();
-    }
-  },
-  localForage() {
-    $.add($.c("script", {
-      type: "text/javascript",
-      src: strings[1],
-      _event: { load_o: Main._setup }
-    }), d.head);
+  openInitPage() {
+    localStorage.setItem("ayy", "startInit");
+    DataBase.cleanUp();
+    w.open(location.origin + "/?initDB", "initDB", "width=600,height=300,toolbar=0,menubar=0,location=0,status=0,scrollbars=0,resizable=0");
   },
   async init() {
     if (location.pathname === "/" && location.search === "?initDB") {
@@ -506,23 +462,15 @@ Main = {
       return $.add($.c("div", {
         id: "update",
         className: "decensooru",
-        innerHTML: `Click here to begin initial Decensooru setup`,
+        innerHTML: "Click here to begin initial Decensooru setup",
         _setAttribute: { style: "padding: 5px" },
-        _event: {
-          click_o: () => {
-            localStorage.setItem("ayy", "startInit");
-            return w.open(location.origin + "/?initDB", "initDB", strings[2]);
-          }
-        }
+        _event: { click_o: Main.openInitPage }
       }));
     }
     if (Date.now() - 288e5 /* 8 HOURS */ > await $.get("timestamp")) {
       ++DataBase.batchNumber;
       DataBase.update();
     }
-    $.safe(Main.pageMode);
-  },
-  pageMode() {
     if (!postsAreObserved) {
       postsAreObserved = true;
       const mutObserver = new MutationObserver(Main.postInit);
@@ -532,17 +480,17 @@ Main = {
       });
       Main.postInit();
     }
-    if ($._regex[0].test(location.pathname) && !$("#image")) {
+    if (isImagePage && !$("#image")) {
       return d.hidden ? setTimeout(Decensor.post, 500) : Decensor.post();
     }
   },
   postInit() {
-    const arr = $$("img[src^='data:image']");
-    for (let i = 0, len = arr.length; i < len; ++i) {
-      $.safe(Decensor.listing, arr[i]);
-    }
+    Array.from($$("img[src^='data:image']"), Decensor.listing);
   },
   css: `
+body.decensooru {
+  overflow: hidden;
+}
 body.decensooru > *:not(#populating) {
   display: none ! important;
 }
@@ -577,4 +525,4 @@ body.decensooru > *:not(#populating) {
 `
 };
 
-Main.setup();
+Main.setup()["catch"](console.error);
