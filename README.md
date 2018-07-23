@@ -14,6 +14,7 @@ sure your settings looks like the following example:
 
 Usage
 -----
+How to install: [streamable][18]  
 The very first time you open a tab of Danbooru, you will have to click the
 button in the top right hand corner, after which a popup will appear in a
 separate window (you might need to enable popups for this) which will begin the
@@ -25,7 +26,9 @@ There are limitations of this initial setup procedure:
 will fall back to using `localStorage` if `IndexedDB` nor `WebSQL` is supported
 in your browser, which might cause your browser to slow down or become
 unresponsive. There is nothing I can do about this, so I just ask you to not
-panic.
+panic.  
+**Chrome-based browser users please be aware that `IndexedDB` currently performs
+very slowly compared to Firefox. The issue is being worked on by Google.**
 * One of the consquence of the above mentioned is that those kinds of storage
 **do not work cross protocol!** That means that storage between `http` and
 `https` cannot be shared, they both have their own storages. This userscript
@@ -111,3 +114,4 @@ WTFPL
 [15]: http://kangax.github.io/compat-table/es2016plus/#test-async_functions
 [16]: https://github.com/friendlyanon/decensooru/raw/master/decensooru_es6.user.js
 [17]: https://github.com/friendlyanon/decensooru/raw/master/decensooru.user.js
+[18]: https://streamable.com/utqxa
