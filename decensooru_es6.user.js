@@ -1,7 +1,7 @@
 // ==UserScript==
 // @id             decensooru
 // @name           decensooru
-// @version        0.9.2.0
+// @version        0.9.2.1
 // @namespace      friendlyanon
 // @author         friendlyanon
 // @description    Addon for Better Better Booru to reveal hidden content.
@@ -191,12 +191,21 @@ let Main, DataBase, Decensor;
 Decensor = {
   listing(node) {
     return _asyncToGenerator(function* () {
-      const href = node.parentNode.getAttribute("href");
+      const href = node.parentNode.parentNode.getAttribute("href");
       const path = href.split("?")[0];
       const id = path.split("/").pop();
       const md5 = yield $.get(id);
-      const reveal = md5 ? `/data/preview/${md5.split(".")[0]}.jpg` : notInDatabase;
-      node.setAttribute("src", reveal);
+      if (md5) {
+        const jpg = md5.split(".")[0] + ".jpg";
+        const local = `https://danbooru.donmai.us//data/preview/${jpg}`;
+        node.setAttribute("src", local);
+        node.previousElementSibling.setAttribute("srcset", local);
+        node.previousElementSibling.previousElementSibling.setAttribute("srcset", `https://raikou3.donmai.us/crop/${jpg.slice(0, 2)}/${jpg.slice(2, 4)}/${jpg}`);
+      } else {
+        node.setAttribute("src", notInDatabase);
+        node.previousElementSibling.setAttribute("srcset", notInDatabase);
+        node.previousElementSibling.previousElementSibling.setAttribute("srcset", notInDatabase);
+      }
     })();
   },
   noteNodeMapper(note) {
@@ -521,42 +530,7 @@ Main = {
   postInit() {
     Array.from($$("img[src^='data:image']"), Decensor.listing);
   },
-  css: `
-body.decensooru {
-  overflow: hidden;
-}
-body.decensooru > *:not(#populating) {
-  display: none ! important;
-}
-#populating {
-  text-align: center;
-  width: 100vw;
-  height: 100vh;
-}
-#populating > div {
-  height: 50vh;
-}
-.loadingSpinner {
-  position: relative;
-}
-.loadingSpinner > div {
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  text-align: center;
-}
-#update.decensooru {
-  background: white;
-  text-align: center;
-  display: inline-block;
-  position: fixed;
-  top: 0;
-  right: 0;
-  border-bottom: 1px solid black;
-  border-left: 1px solid black;
-  font-size: 16px;
-}
-`
+  css: "body.decensooru {\n  overflow: hidden;\n}\nbody.decensooru > *:not(#populating) {\n  display: none ! important;\n}\n#populating {\n  text-align: center;\n  width: 100vw;\n  height: 100vh;\n}\n#populating > div {\n  height: 50vh;\n}\n.loadingSpinner {\n  position: relative;\n}\n.loadingSpinner > div {\n  position: absolute;\n  bottom: 0;\n  width: 100%;\n  text-align: center;\n}\n#update.decensooru {\n  background: white;\n  text-align: center;\n  display: inline-block;\n  position: fixed;\n  top: 0;\n  right: 0;\n  border-bottom: 1px solid black;\n  border-left: 1px solid black;\n  font-size: 16px;\n}"
 };
 
 Main.setup()["catch"](console.error);
