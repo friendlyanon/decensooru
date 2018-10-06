@@ -1,7 +1,7 @@
 // ==UserScript==
 // @id             decensooru
 // @name           decensooru
-// @version        0.9.3.2
+// @version        0.9.3.3
 // @namespace      friendlyanon
 // @author         friendlyanon
 // @description    Addon for Better Better Booru to reveal hidden content.
@@ -151,10 +151,11 @@ const Decensor = {
         break;
       case "zip":
         ugoira = true;
+      case "mp4":
       case "webm":
         type = "video";
         img = $.replace(lastEl, $.c("video", {
-          src: `/data/${ugoira ? "sample/sample-" : ""}${md5}.webm`,
+          src: `/data/${ugoira ? "sample/sample-" : ""}${md5}.${ext}`,
           id: "image",
           autoplay: true,
           loop: true,
