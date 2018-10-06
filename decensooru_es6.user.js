@@ -1,7 +1,7 @@
 // ==UserScript==
 // @id             decensooru
 // @name           decensooru
-// @version        0.9.3.1
+// @version        0.9.3.2
 // @namespace      friendlyanon
 // @author         friendlyanon
 // @description    Addon for Better Better Booru to reveal hidden content.
@@ -19,7 +19,7 @@
 "use strict";
 
 /* eslint-disable no-cond-assign, no-empty, no-fallthrough */
-/* globals localforage, Danbooru, notInDatabase, HTML, $, $$ */
+/* globals localforage, notInDatabase, HTML, $, $$ */
 
 function _asyncToGenerator(fn) { return function () { var gen = fn.apply(this, arguments); return new Promise(function (resolve, reject) { function step(key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { return Promise.resolve(value).then(function (value) { step("next", value); }, function (err) { step("throw", err); }); } } return step("next"); }); }; }
 
@@ -40,6 +40,7 @@ decensooru: {
     listing(node) {
       return _asyncToGenerator(function* () {
         const href = node.parentNode.parentNode.getAttribute("href");
+        if (!href) return;
         const path = href.split("?")[0];
         const id = path.split("/").pop();
         const md5 = yield $.get(id);
@@ -57,37 +58,34 @@ decensooru: {
         }
       })();
     },
-    noteNodeMapper(note) {
-      const { id, x, y, width, height, body } = note;
-      return $.c("article", {
-        id, textContent: body,
-        dataset: { x, y, width, height, body }
-      });
-    },
-    _notes() {
-      const D = Danbooru;
-      D.Note.embed = "true" === D.meta("post-has-embedded-notes");
-      D.Note.load_all("bbb");
-      D.Note.initialize_shortcuts();
-      D.Note.initialize_highlight();
-      $(window).on("hashchange", D.Note.initialize_highlight);
-    },
-    notes(id) {
-      return _asyncToGenerator(function* () {
-        const notesUrl = "/notes.json?group_by=note&search[post_id]=" + id;
-        try {
-          const res = (yield $.xhr(notesUrl, "json")).target.response;
-          $.extend($.id("notes"), { _children: res.map(Decensor.noteNodeMapper) });
-        } catch (_) {}
-        $.eval(Decensor._notes, true);
-      })();
-    },
     _post(e) {
       e.preventDefault();
       $.safe(w.Danbooru.Note.Box.toggle_all);
     },
     _error({ currentTarget: e }) {
       e.src = "/cached" + e.getAttribute("src");
+    },
+    notes() {
+      const { Note: self } = w.Danbooru;
+      self.embed = $("meta[name='post-has-embedded-notes']").content === "true";
+      const fragment = d.createDocumentFragment();
+      const keys = ["id", "x", "y", "width", "height", "body"];
+      for (const note of $$("#notes article")) {
+        const args = [fragment];
+        const { dataset } = note;
+        for (const key of keys) args.push(dataset[key]);
+        args.push(note.innerHTML);
+        self.add.apply(self, args);
+      }
+      $.add(fragment, $.id("note-container"));
+      if (self.embed) {
+        for (const box of $$(".note-box")) {
+          self.Box.resize_inner_border(w.$(box));
+        }
+      }
+      self.initialize_shortcuts();
+      self.initialize_highlight();
+      w.$(w.document).on("hashchange.danbooru.note", self.initialize_highlight);
     },
     getDetails() {
       return _asyncToGenerator(function* () {
@@ -113,7 +111,7 @@ decensooru: {
         const [md5, ext] = data.split(".");
         const width = $("span[itemprop='width']").textContent.trim();
         const height = $("span[itemprop='height']").textContent.trim();
-        return { ext, lastEl, data, md5, width, height };
+        return { ext, lastEl, data, md5, width, height, parent };
       })();
     },
     finish(img, width, height, ugoira, data, type) {
@@ -142,7 +140,7 @@ decensooru: {
       return _asyncToGenerator(function* () {
         const details = yield Decensor.getDetails();
         if (!details) return;
-        const { ext, lastEl, data, md5, width, height } = details;
+        const { ext, lastEl, data, md5, width, height, parent } = details;
         let type, ugoira, img;
         switch (ext) {
           case "swf":
@@ -350,7 +348,7 @@ decensooru: {
           DataBase.update().then(null, console.error);
         }
         if (isImagePage && !$.id("image")) {
-          d.hidden ? setTimeout(Decensor.post, 500) : Decensor.post();
+          Decensor.post().then(null, console.error);
         }
         if (Main.mutObserver) return;
         (Main.mutObserver = new MutationObserver(Main.postInit)).observe(d.body, {
