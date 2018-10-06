@@ -161,7 +161,7 @@ decensooru: {
           case "webm":
             type = "video";
             img = $.replace(lastEl, $.c("video", {
-              src: `/data/${ugoira ? "sample/sample-" : ""}${md5}.${ext}`,
+              src: `/data/${ugoira ? "sample/sample-" : ""}${md5}.${ugoira ? "webm" : ext}`,
               id: "image",
               autoplay: true,
               loop: true,
