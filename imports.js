@@ -94,15 +94,6 @@ extend($, {
     try { return args.shift().apply(null, args); }
     catch (err) { if ($.DEBUG) console.error(err); }
   },
-  eval(text = "", objMethod = false) {
-    const script = $.c("script");
-    if (typeof text === "function") {
-      text = (objMethod ? "(function " : "(") + String(text) + ")()";
-    }
-    $.add(new Text(text), script);
-    $.add(script, d.documentElement);
-    $.rm(script);
-  },
   get(key) {
     return localforage.getItem(key);
   },
