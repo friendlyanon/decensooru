@@ -1,7 +1,7 @@
 // ==UserScript==
 // @id             decensooru
 // @name           decensooru
-// @version        0.9.3.0
+// @version        0.9.3.1
 // @namespace      friendlyanon
 // @author         friendlyanon
 // @description    Addon for Better Better Booru to reveal hidden content.
@@ -76,7 +76,7 @@ decensooru: {
       return _asyncToGenerator(function* () {
         const notesUrl = "/notes.json?group_by=note&search[post_id]=" + id;
         try {
-          const res = (yield $.xhr(notesUrl, "json")).response;
+          const res = (yield $.xhr(notesUrl, "json")).target.response;
           $.extend($.id("notes"), { _children: res.map(Decensor.noteNodeMapper) });
         } catch (_) {}
         $.eval(Decensor._notes, true);
@@ -245,7 +245,7 @@ decensooru: {
         try {
           fetcher: {
             const { batchNumber } = DataBase;
-            const x = yield $.xhr(DataBase.batches + batchNumber);
+            const { target: x } = yield $.xhr(DataBase.batches + batchNumber);
             const [outLeft, outRight] = DataBase.displayProgress;
             outLeft.textContent = "Downloading batch #";
             outRight.textContent = batchNumber;
@@ -347,7 +347,7 @@ decensooru: {
         }
         if (Date.now() - 288e5 /* 8 HOURS */ > (yield $.get("timestamp"))) {
           ++DataBase.batchNumber;
-          DataBase.update();
+          DataBase.update().then(null, console.error);
         }
         if (isImagePage && !$.id("image")) {
           d.hidden ? setTimeout(Decensor.post, 500) : Decensor.post();
