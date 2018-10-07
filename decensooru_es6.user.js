@@ -115,7 +115,7 @@ decensooru: {
         return { ext, lastEl, data, md5, width, height, parent };
       })();
     },
-    finish(img, width, height, ugoira, data, type) {
+    finish(img, width, height, ugoira, data, type, parent) {
       $.extend(img, {
         _event: { error_o: Decensor._error, load_o: Decensor.notes }
       });
@@ -180,7 +180,7 @@ decensooru: {
             }));
             break;
         }
-        Decensor.finish(img, width, height, ugoira, data, type);
+        Decensor.finish(img, width, height, ugoira, data, type, parent);
       })();
     },
     saveContent(ugoira) {
