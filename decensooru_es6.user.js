@@ -1,7 +1,7 @@
 // ==UserScript==
 // @id             decensooru
 // @name           decensooru
-// @version        0.9.3.3
+// @version        0.9.3.4
 // @namespace      friendlyanon
 // @author         friendlyanon
 // @description    Addon for Better Better Booru to reveal hidden content.
@@ -18,7 +18,7 @@
 
 "use strict";
 
-/* eslint-disable no-cond-assign, no-empty, no-fallthrough */
+/* eslint-disable no-fallthrough */
 /* globals localforage, notInDatabase, HTML, $, $$ */
 
 function _asyncToGenerator(fn) { return function () { var gen = fn.apply(this, arguments); return new Promise(function (resolve, reject) { function step(key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { return Promise.resolve(value).then(function (value) { step("next", value); }, function (err) { step("throw", err); }); } } return step("next"); }); }; }
@@ -99,9 +99,10 @@ decensooru: {
         const postInfo = $("#post-information li");
         if (!postInfo) return Decensor.postWorking = false;
         const id = postInfo.textContent.trim().split(" ")[1];
-        const data = yield $.get(id);
         const parent = $.id("image-container");
         const lastEl = parent.lastElementChild;
+        if (lastEl.tagName !== "P") return;
+        const data = yield $.get(id);
         if (!data) {
           Decensor.postWorking = false;
           return void $.replace(lastEl, $.c("img", {
@@ -241,42 +242,41 @@ decensooru: {
     },
     pullBatch() {
       return _asyncToGenerator(function* () {
-        try {
-          fetcher: {
-            const { batchNumber } = DataBase;
-            const { target: x } = yield $.xhr(DataBase.batches + batchNumber);
-            const [outLeft, outRight] = DataBase.displayProgress;
-            outLeft.textContent = "Downloading batch #";
-            outRight.textContent = batchNumber;
-            switch (x.status) {
-              case 404:
-                DataBase.notDone = false;break fetcher;
-              case 200:case 304:
-                break;
-              default:
-                throw new Error("Network error");
-            }
-            const pairs = x.responseText.trim().split("\n");
-            outLeft.textContent = "Processing batch: ";
-            for (let i = 0, len = Math.ceil(pairs.length / 500); i < len;) {
-              const pairBatch = pairs.splice(0, 500).map(DataBase.all);
-              outRight.textContent = `${++i} / ${len}`;
-              yield Promise.all(pairBatch);
-              Main.postInit();
-            }
-            yield $.set("db_version", batchNumber);
+        fetcher: try {
+          const { batchNumber } = DataBase;
+          const [outLeft, outRight] = DataBase.displayProgress;
+          outLeft.textContent = "Downloading batch #";
+          outRight.textContent = batchNumber;
+          const x = (yield $.xhr(DataBase.batches + batchNumber)).target;
+          switch (x.status) {
+            case 404:
+              DataBase.notDone = false;break fetcher;
+            case 200:case 304:
+              break;
+            default:
+              console.error("Network error: %i", x.status);
+              DataBase.notDone = null;
+              break fetcher;
           }
-        } catch (err) {
-          DataBase.notDone = null;
-        } finally {
-          switch (DataBase.notDone) {
-            case true:
-              ++DataBase.batchNumber;break;
-            case false:
-              yield $.set("timestamp", Date.now());
-            case null:
-              DataBase.cleanUp();
+          const pairs = x.responseText.trim().split("\n");
+          outLeft.textContent = "Processing batch: ";
+          for (let i = 0, len = Math.ceil(pairs.length / 500); i < len;) {
+            const pairBatch = pairs.splice(0, 500).map(DataBase.all);
+            outRight.textContent = `${++i} / ${len}`;
+            yield Promise.all(pairBatch);
+            Main.postInit();
           }
+          yield $.set("db_version", batchNumber);
+        } catch (error) {
+          console.error(error);
+        }
+        switch (DataBase.notDone) {
+          case true:
+            ++DataBase.batchNumber;break;
+          case false:
+            yield $.set("timestamp", Date.now());
+          case null:
+            DataBase.cleanUp();
         }
       })();
     },
@@ -364,5 +364,5 @@ decensooru: {
     }
   };
 
-  Main.setup().catch(console.error);
+  Main.setup().then(null, console.error);
 } // decensooru
