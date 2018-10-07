@@ -110,7 +110,7 @@ const Decensor = {
     const height = $("span[itemprop='height']").textContent.trim();
     return { ext, lastEl, data, md5, width, height, parent };
   },
-  finish(img, width, height, ugoira, data, type) {
+  finish(img, width, height, ugoira, data, type, parent) {
     $.extend(img, {
       _event: { error_o: Decensor._error, load_o: Decensor.notes }
     });
@@ -174,7 +174,7 @@ const Decensor = {
         }));
         break;
     }
-    Decensor.finish(img, width, height, ugoira, data, type);
+    Decensor.finish(img, width, height, ugoira, data, type, parent);
   },
   saveContent(ugoira) {
     if (!ugoira) return [];
