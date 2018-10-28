@@ -1,7 +1,7 @@
 // ==UserScript==
 // @id             decensooru
 // @name           decensooru
-// @version        0.9.3.4
+// @version        0.9.3.5
 // @namespace      friendlyanon
 // @author         friendlyanon
 // @description    Addon for Better Better Booru to reveal hidden content.
@@ -37,6 +37,13 @@ decensooru: {
    * RESTORE THE `HIDDEN` THUMBNAILS OR IMAGE VIEW ON A POST'S PAGE
    */
   const Decensor = {
+    newThumbs({ target }) {
+      if (target.tagName !== "IMG" || target.parentNode.tagName !== "PICTURE" || target.src.includes("raikou4")) return;
+      const fname = target.src.split("/").pop();
+      const path = `${fname.substr(0, 2)}/${fname.substr(2, 2)}/${fname}`;
+      const newUrl = `https://raikou4.donmai.us/preview/${path}`;
+      target.previousElementSibling.setAttribute("srcset", target.src = newUrl);
+    },
     listing(node) {
       return _asyncToGenerator(function* () {
         const href = node.parentNode.parentNode.getAttribute("href");
@@ -321,6 +328,7 @@ decensooru: {
         });
         yield localforage.ready();
         DataBase.batchNumber = yield $.get("db_version");
+        document.addEventListener("error", Decensor.newThumbs, true);
         yield Main.init();
       })();
     },
