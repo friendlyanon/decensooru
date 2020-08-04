@@ -1,4 +1,5 @@
 .idea/
+dist/
+mix-manifest.json
 package-lock.json
 node_modules/
-batches/forge_batches.js
