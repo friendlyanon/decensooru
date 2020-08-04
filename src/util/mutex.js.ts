@@ -1,4 +1,4 @@
-import { sleep } from "./sleep";
+import { delay } from "./delay";
 
 export interface MutexOptions {
   interval?: number;
@@ -58,7 +58,7 @@ export class Mutex {
    * time
    */
   async promise(): Promise<Mutex> {
-    for (; ; await sleep(this.interval)) {
+    for (; ; await delay(this.interval)) {
       if (!this.isLocked()) {
         return this.unlock();
       }
