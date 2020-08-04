@@ -1,23 +1,23 @@
 {
+    "root": true,
     "parserOptions": {
-        "ecmaVersion": 2016,
-        "sourceType": "script",
+        "ecmaVersion": 2020,
+        "sourceType": "module",
         "ecmaFeatures": {
             "globalReturn": false,
-            "impliedStrict": false,
-            "jsx": true
+            "impliedStrict": false
         }
     },
     "env": {
         "es6": true,
-        "mocha": true
+        "browser": true
     },
-    "globals": {},
+    "parser": "@typescript-eslint/parser",
     "plugins": [
         "extended",
-        "unicorn"
+        "unicorn",
+        "@typescript-eslint"
     ],
-    "settings": {},
     "rules": {
         "for-direction": "error",
         "getter-return": [

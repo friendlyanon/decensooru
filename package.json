@@ -21,6 +21,8 @@
     },
     "homepage": "https://github.com/friendlyanon/decensooru",
     "devDependencies": {
+        "@typescript-eslint/eslint-plugin": "^3.8.0",
+        "@typescript-eslint/parser": "^3.8.0",
         "browserslist": "^4.13.0",
         "eslint": "^7.6.0",
         "eslint-plugin-extended": "^0.2.0",
