@@ -408,6 +408,7 @@
             "error",
             "always",
             {
+                "ignorePattern": "noinspection",
                 "ignoreInlineComments": false,
                 "ignoreConsecutiveComments": true
             }

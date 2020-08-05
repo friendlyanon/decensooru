@@ -43,5 +43,7 @@ declare function off(
 
 declare module "*.css.inc" {
   const value: string;
+
+  // noinspection JSDuplicatedDeclaration
   export default value;
 }
