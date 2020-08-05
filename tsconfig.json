@@ -1,9 +1,12 @@
 {
-  "compilerOptions": {
-    "target": "es2016",
-    "module": "esnext",
-    "removeComments": true,
-    "strict": true,
-    "allowSyntheticDefaultImports": true
-  }
+    "compilerOptions": {
+        "target": "es2016",
+        "module": "esnext",
+        "removeComments": true,
+        "strict": true,
+        "allowSyntheticDefaultImports": true,
+        "typeRoots": [
+            "./types/*.d.ts"
+        ]
+    }
 }

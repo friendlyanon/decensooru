@@ -40,3 +40,8 @@ declare function off(
   listener: EventListenerOrEventListenerObject,
   options?: boolean | AddEventListenerOptions,
 ): void;
+
+declare module "*.css.inc" {
+  const value: string;
+  export default value;
+}
