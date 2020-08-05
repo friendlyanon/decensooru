@@ -29,6 +29,7 @@
         "eslint-plugin-unicorn": "^21.0.0",
         "laravel-mix": "^5.0.4",
         "laravel-mix-polyfill": "^2.0.0",
+        "raw-loader": "^4.0.1",
         "ts-loader": "^8.0.2",
         "typescript": "^3.9.7"
     },
