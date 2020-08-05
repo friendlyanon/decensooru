@@ -58,10 +58,17 @@ export class Mutex {
    * time
    */
   async promise(): Promise<Mutex> {
-    for (; ; await delay(this.interval)) {
+    const limit = this.timeout / this.interval;
+    for (let i = 0; ; await delay(this.interval)) {
       if (!this.isLocked()) {
         return this.unlock();
       }
+
+      if (++i >= limit) {
+        break;
+      }
     }
+
+    throw new Error("Timeout");
   }
 }
