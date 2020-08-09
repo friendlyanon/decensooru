@@ -386,7 +386,7 @@
             "error",
             "always",
             {
-                "ignorePattern": "noinspection|ignored",
+                "ignorePattern": "noinspection|ignored|language=",
                 "ignoreInlineComments": false,
                 "ignoreConsecutiveComments": true
             }

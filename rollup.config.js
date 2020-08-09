@@ -8,6 +8,7 @@ function banner() {
     .toString(36)
     .slice(2);
 
+  // language=JavaScript
   return `
 // ==UserScript==
 // @name           ${pkg.name}
