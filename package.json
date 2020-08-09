@@ -7,10 +7,7 @@
     "main": "src/index.ts",
     "scripts": {
         "test": "echo No tests",
-        "dev": "npm run development",
-        "development": "node node_modules/webpack/bin/webpack.js --mode=development --progress --hide-modules --config=node_modules/laravel-mix/setup/webpack.config.js",
-        "prod": "npm run production",
-        "production": "node node_modules/webpack/bin/webpack.js --mode=production --no-progress --hide-modules --config=node_modules/laravel-mix/setup/webpack.config.js"
+        "build": "npx rollup -c && node format.js"
     },
     "repository": {
         "type": "git",
@@ -21,22 +18,17 @@
     },
     "homepage": "https://github.com/friendlyanon/decensooru",
     "devDependencies": {
+        "@rollup/plugin-node-resolve": "^8.4.0",
         "@typescript-eslint/eslint-plugin": "^3.8.0",
         "@typescript-eslint/parser": "^3.8.0",
-        "browserslist": "^4.13.0",
+        "comlink": "https://github.com/friendlyanon/comlink/releases/download/v1.0.0/comlink-1.0.0.tgz",
         "eslint": "^7.6.0",
         "eslint-plugin-extended": "^0.2.0",
         "eslint-plugin-unicorn": "^21.0.0",
-        "laravel-mix": "^5.0.4",
-        "laravel-mix-polyfill": "^2.0.0",
-        "raw-loader": "^4.0.1",
-        "ts-loader": "^8.0.2",
-        "typescript": "^3.9.7"
-    },
-    "browserslist": [
-        ">= 4%",
-        "Firefox 52",
-        "not IE <= 11",
-        "not IE_mob <= 11"
-    ]
+        "rollup": "^2.23.1",
+        "rollup-plugin-string": "^3.0.0",
+        "rollup-plugin-typescript2": "^0.27.2",
+        "typescript": "^3.9.7",
+        "userjs-util": "https://github.com/friendlyanon/userjs-util/releases/download/v1.0.0/userjs-util-1.0.0.tgz"
+    }
 }

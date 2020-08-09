@@ -1,3 +1,4 @@
+// eslint-disable-next-line id-length
 declare const d: Document;
 declare const messageId: string;
 
@@ -41,7 +42,7 @@ declare function off(
   options?: boolean | AddEventListenerOptions,
 ): void;
 
-declare module "*.css.inc" {
+declare module "*.css" {
   const value: string;
 
   // noinspection JSDuplicatedDeclaration
