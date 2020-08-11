@@ -49,8 +49,6 @@ export default {
   plugins: [
     resolve(),
     string({ include: "**/*.css" }),
-    typescript({
-      tsconfig: "./tsconfig.rollup.json",
-    }),
+    typescript(),
   ],
 };
